@@ -105,22 +105,14 @@ function github({headers, body}) {
       {auth: process.env.GITHUB_TOKEN}
     )),
     deploy: async () => {
-      let result;
-      try {
-        result = await githubApi.post(deployments_url, {
-          ref,
-          auto_merge: false,
-          environment: 'PR staging'
-        });
-        deploymentId = result.data.id;
-      } catch (error) {
-        log.error(error.message);
-        log.error('response.data', error.response.data);
-        log.error('response.status', error.response.status);
-        log.error('response.headers', error.response.headers);
-        log.error('request', error.request);
-        throw error;
-      }
+      // https://developer.github.com/v3/repos/deployments/#create-a-deployment-status
+      const result = await githubApi.post(deployments_url, {
+        ref,
+        auto_merge: false,
+        required_contexts: [],
+        environment: 'PR staging'
+      });
+      deploymentId = result.data.id;
     },
     setStatus: (state, description, environmentUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
