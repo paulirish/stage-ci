@@ -89,6 +89,8 @@ function github({headers, body}) {
   const {repository, pull_request} = body;
   const {ref, sha} = pull_request.head;
   const aliasID = `${repository.name.replace(/[^A-Z0-9]/gi, '-')}-pr${pull_request.number}`;
+  const alias = `https://${aliasID}.now.sh`;
+  const logsUrl = `${alias}/_logs`;
   const {deployments_url} = pull_request.head.repo;
   let deploymentId;
 
@@ -97,7 +99,7 @@ function github({headers, body}) {
     sha,
     success: true,
     name: repository.full_name,
-    alias: `https://${aliasID}.now.sh`,
+    alias,
     cloneUrl: url.format(Object.assign(
       url.parse(repository.clone_url),
       {auth: process.env.GITHUB_TOKEN}
@@ -120,13 +122,13 @@ function github({headers, body}) {
         throw error;
       }
     },
-    setStatus: (state, description, targetUrl) => {
+    setStatus: (state, description, environmentUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
       return githubApi.post(`${deployments_url}/${deploymentId}/statuses`, {
         state,
         description,
-        environment_url: targetUrl,
-        target_url: targetUrl
+        environment_url: environmentUrl,
+        target_url: logsUrl
       });
     }
   };
