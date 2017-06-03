@@ -18,5 +18,6 @@ if (PAPERTRAIL_HOST && PAPERTRAIL_PORT) {
     exitOnError: false
   });
 } else {
+  console.log('using console for loggin');
   module.exports = console;
 }
