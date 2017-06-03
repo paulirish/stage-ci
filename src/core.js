@@ -113,7 +113,10 @@ function github({headers, body}) {
         deploymentId = result.data.id;
       } catch (error) {
         log.error(error.message);
-        log.error(result);
+        log.error('response.data', error.response.data);
+        log.error('response.status', error.response.status);
+        log.error('response.headers', error.response.headers);
+        log.error('request', error.request);
         throw error;
       }
     },
