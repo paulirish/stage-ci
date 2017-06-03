@@ -25,25 +25,37 @@ const githubApi = axios.create({
   }
 });
 
-function stage(cwd, {alias}) {
+let nowProc;
+let nowProcClose;
+function initStaging(cwd, { alias }) {
   return new Promise((resolve, reject) => {
-    let url, aliasError;
-    const nowProc = exec(now(envs()), {cwd});
+    nowProc = exec(now(envs()), { cwd });
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
-    nowProc.stdout.on('data', (data) => {if (!url) url = data;});
+    nowProc.stdout.on('data', (data) => {
+      if (url) return;
+      url = data;
+      resolve(url);
+    });
+  });
+}
+
+function stage(cwd, {alias, url}) {
+  return new Promise((resolve, reject) => {
+    let aliasError;
     nowProc.stdout.on('close', () => {
       if (!url) return reject(new Error('Deployment failed'));
       log.info(`> Setting ${url} to alias ${alias}`);
-      const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
-      aliasProc.stderr.on('data', (error) => {aliasError = error;});
+      const aliasProc = exec(now(`alias set ${url} ${alias}`), { cwd });
+      aliasProc.stderr.on('data', (error) => { aliasError = error; });
       aliasProc.on('close', () => {
         if (aliasError) return reject(new Error(aliasError));
         log.info(`> Alias ready ${alias}`);
-        resolve(alias);
+        resolve({ url, alias });
       });
     });
   });
 }
+
 
 async function sync(cloneUrl, localDirectory, {ref, checkout}) {
   try {
@@ -110,7 +122,7 @@ function github({headers, body}) {
         ref,
         auto_merge: false,
         required_contexts: [],
-        environment: 'PR staging'
+        environment: '🚀 PR staging'
       });
       deploymentId = result.data.id;
     },
@@ -137,6 +149,7 @@ function isGithubRequestCrypographicallySafe({headers, body, secret}) {
 }
 
 module.exports = {
+  initStaging,
   stage,
   sync,
   github
