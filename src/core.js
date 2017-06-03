@@ -15,7 +15,7 @@ if (!process.env.ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN}`;
+  return `${nowBin} ${cmd} --token ${process.env.ZEIT_API_TOKEN} --public false`;
 };
 
 const githubApi = axios.create({
