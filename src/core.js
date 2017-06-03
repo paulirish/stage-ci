@@ -103,12 +103,19 @@ function github({headers, body}) {
       {auth: process.env.GITHUB_TOKEN}
     )),
     deploy: async () => {
-      const result = await githubApi.post(deployments_url, {
-        ref,
-        auto_merge: false,
-        environment: 'staging'
-      });
-      deploymentId = result.data.id;
+      let result;
+      try {
+        result = await githubApi.post(deployments_url, {
+          ref,
+          auto_merge: false,
+          environment: 'PR staging'
+        });
+        deploymentId = result.data.id;
+      } catch (error) {
+        log.error(error.message);
+        log.error(result);
+        throw error;
+      }
     },
     setStatus: (state, description, targetUrl) => {
       log.info(`> Setting GitHub status to "${state}"...`);
