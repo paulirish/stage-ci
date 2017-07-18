@@ -24,22 +24,28 @@ if (!ZEIT_API_TOKEN) throw new Error('ZEIT_API_TOKEN must be defined in environm
 
 const now = (cmd='') => {
   const nowBin = path.resolve('./node_modules/now/build/bin/now');
-  return `${nowBin} ${cmd} --token ${ZEIT_API_TOKEN}`;
+  log.info(`> Executing:
+      now ${cmd}`);
+  return `${nowBin} ${cmd}  --debug --token ${ZEIT_API_TOKEN}`;
 };
 
 function stage(cwd, {alias}) {
   return new Promise((resolve, reject) => {
-    let url, aliasError;
+    let url;
     const nowProc = exec(now(envs()), {cwd});
     nowProc.stderr.on('data', (error) => reject(new Error(error)));
-    nowProc.stdout.on('data', (data) => {if (!url) url = data;});
-    nowProc.stdout.on('close', () => {
-      if (!url) return reject(new Error('Deployment failed'));
+    nowProc.stdout.on('data', (data) => {
+      if (!url && !data.startsWith('>') && !data.startsWith('[debug]')) url = data;
+      log.info(`> > now: ${data.trim()}`);
+    });
+    nowProc.on('close', (code) => {
+      if (!url || code !== 0) return reject(new Error('Deployment failed'));
       log.info(`> Setting ${url} to alias ${alias}`);
       const aliasProc = exec(now(`alias set ${url} ${alias}`), {cwd});
-      aliasProc.stderr.on('data', (error) => {aliasError = error;});
-      aliasProc.on('close', () => {
-        if (aliasError) return reject(new Error(aliasError));
+      aliasProc.stderr.on('data', (data) => log.info(`> > now alias: ${data.trim()}`));
+      aliasProc.stdout.on('data', (data) => log.info(`> > now alias: ${data.trim()}`));
+      aliasProc.on('close', (code) => {
+        if (code !== 0) return reject(new Error('Aliasing failed'));
         log.info(`> Alias ready ${alias}`);
         resolve(alias);
       });
